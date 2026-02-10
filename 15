@@ -1,0 +1,51 @@
+function main(stream) {
+  // Определяем адрес, который нужно отслеживать, и список ID
+  const targetAddress = "zerowfY91rbHy5bqcMToo2HaHMYFPB6UhZdTQw3av7C";
+  const targetIDs = [
+    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+    "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+  ];
+
+  // Если данные находятся под ключом "data", используем их, иначе берем сам объект потока
+  const data = stream.data ? stream.data : stream;
+
+  // Проверяем данные как объект
+  function findTransaction(data) {
+    let relevantData = null;
+
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        const result = findTransaction(item);
+        if (result) return result;
+      }
+    } else if (typeof data === 'object' && data !== null) {
+      // Ищем транзакции, содержащие целевой адрес и один из ID
+      const dataString = JSON.stringify(data).toLowerCase();
+      const hasTargetAddress = dataString.includes(targetAddress.toLowerCase());
+      const hasTargetID = targetIDs.some(id => dataString.includes(id.toLowerCase()));
+
+      if (hasTargetAddress && hasTargetID) {
+        return data;
+      }
+
+      for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+          const result = findTransaction(data[key]);
+          if (result) return result;
+        }
+      }
+    }
+
+    return relevantData;
+  }
+
+  // Находим нужную транзакцию
+  const transaction = findTransaction(data);
+
+  if (!transaction) {
+    return { transactions: [] }; // Если транзакция не найдена, возвращаем пусто
+  }
+
+  // Возвращаем найденную транзакцию
+  return { transactions: [transaction] };
+}
